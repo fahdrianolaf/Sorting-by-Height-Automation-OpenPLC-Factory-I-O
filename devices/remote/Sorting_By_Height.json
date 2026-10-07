@@ -1,0 +1,255 @@
+{
+  "name": "Sorting_By_Height",
+  "protocol": "modbus-tcp",
+  "modbusTcpConfig": {
+    "host": "host.docker.internal",
+    "port": 502,
+    "timeout": 1000,
+    "slaveId": 1,
+    "ioGroups": [
+      {
+        "id": "1b4f8650-a0cd-4a26-afe3-2effc7ab49fe",
+        "name": "Digital_Inputs",
+        "functionCode": "2",
+        "cycleTime": 20,
+        "offset": "0",
+        "length": 16,
+        "errorHandling": "set-to-zero",
+        "ioPoints": [
+          {
+            "id": "Digital_Inputs_0",
+            "name": "Digital_Inputs_0",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.0",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_1",
+            "name": "Digital_Inputs_1",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.1",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_2",
+            "name": "Digital_Inputs_2",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.2",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_3",
+            "name": "Digital_Inputs_3",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.3",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_4",
+            "name": "Digital_Inputs_4",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.4",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_5",
+            "name": "Digital_Inputs_5",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.5",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_6",
+            "name": "Digital_Inputs_6",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.6",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_7",
+            "name": "Digital_Inputs_7",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX0.7",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_8",
+            "name": "Digital_Inputs_8",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.0",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_9",
+            "name": "Digital_Inputs_9",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.1",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_10",
+            "name": "Digital_Inputs_10",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.2",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_11",
+            "name": "Digital_Inputs_11",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.3",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_12",
+            "name": "Digital_Inputs_12",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.4",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_13",
+            "name": "Digital_Inputs_13",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.5",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_14",
+            "name": "Digital_Inputs_14",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.6",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Inputs_15",
+            "name": "Digital_Inputs_15",
+            "type": "Digital Input (Discrete Input)",
+            "iecLocation": "%IX1.7",
+            "alias": ""
+          }
+        ]
+      },
+      {
+        "id": "581ade90-21f8-408a-88a5-84462c4586b3",
+        "name": "Digital_Outputs",
+        "functionCode": "15",
+        "cycleTime": 100,
+        "offset": "0",
+        "length": 13,
+        "errorHandling": "set-to-zero",
+        "ioPoints": [
+          {
+            "id": "Digital_Outputs_0",
+            "name": "Digital_Outputs_0",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.0",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_1",
+            "name": "Digital_Outputs_1",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.1",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_2",
+            "name": "Digital_Outputs_2",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.2",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_3",
+            "name": "Digital_Outputs_3",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.3",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_4",
+            "name": "Digital_Outputs_4",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.4",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_5",
+            "name": "Digital_Outputs_5",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.5",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_6",
+            "name": "Digital_Outputs_6",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.6",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_7",
+            "name": "Digital_Outputs_7",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX0.7",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_8",
+            "name": "Digital_Outputs_8",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX1.0",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_9",
+            "name": "Digital_Outputs_9",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX1.1",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_10",
+            "name": "Digital_Outputs_10",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX1.2",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_11",
+            "name": "Digital_Outputs_11",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX1.3",
+            "alias": ""
+          },
+          {
+            "id": "Digital_Outputs_12",
+            "name": "Digital_Outputs_12",
+            "type": "Digital Output (Multiple Coils)",
+            "iecLocation": "%QX1.4",
+            "alias": ""
+          }
+        ]
+      },
+      {
+        "id": "9e31bdb2-2c12-4bd5-b2a8-7cf76ded77f0",
+        "name": "Counter",
+        "functionCode": "16",
+        "cycleTime": 20,
+        "offset": "0",
+        "length": 1,
+        "errorHandling": "set-to-zero",
+        "ioPoints": [
+          {
+            "id": "Counter_0",
+            "name": "Counter_0",
+            "type": "Analog Output (Multiple Registers)",
+            "iecLocation": "%QW0",
+            "alias": ""
+          }
+        ]
+      }
+    ]
+  }
+}

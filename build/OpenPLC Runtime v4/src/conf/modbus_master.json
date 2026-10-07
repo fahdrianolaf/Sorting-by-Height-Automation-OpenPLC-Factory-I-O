@@ -1,0 +1,40 @@
+[
+  {
+    "name": "Sorting_By_Height",
+    "protocol": "MODBUS",
+    "config": {
+      "type": "SLAVE",
+      "transport": "tcp",
+      "host": "host.docker.internal",
+      "port": 502,
+      "timeout_ms": 1000,
+      "slave_id": 1,
+      "io_points": [
+        {
+          "fc": 2,
+          "offset": "0x0000",
+          "iec_location": "%IX0.0",
+          "len": 16,
+          "cycle_time_ms": 20,
+          "error_handling": "set-to-zero"
+        },
+        {
+          "fc": 15,
+          "offset": "0x0000",
+          "iec_location": "%QX0.0",
+          "len": 13,
+          "cycle_time_ms": 100,
+          "error_handling": "set-to-zero"
+        },
+        {
+          "fc": 16,
+          "offset": "0x0000",
+          "iec_location": "%QW0",
+          "len": 1,
+          "cycle_time_ms": 20,
+          "error_handling": "set-to-zero"
+        }
+      ]
+    }
+  }
+]
