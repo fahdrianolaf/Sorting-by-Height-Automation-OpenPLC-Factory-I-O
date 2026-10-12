@@ -1,0 +1,2942 @@
+[
+  {
+    "id": "tab_sorting",
+    "type": "tab",
+    "label": "Sorting by Height",
+    "disabled": false,
+    "info": "OpenPLC (Modbus) -> MQTT -> Node-RED dashboard"
+  },
+  {
+    "id": "mqtt_broker",
+    "type": "mqtt-broker",
+    "name": "Mosquitto",
+    "broker": "localhost",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "sorting/system/status",
+    "birthQos": "0",
+    "birthRetain": "true",
+    "birthPayload": "online",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "sorting/system/status",
+    "willQos": "0",
+    "willRetain": "true",
+    "willPayload": "offline",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "modbus_plc",
+    "type": "modbus-client",
+    "name": "OpenPLC",
+    "clienttype": "tcp",
+    "bufferCommands": true,
+    "stateLogEnabled": false,
+    "queueLogEnabled": false,
+    "failureLogEnabled": true,
+    "tcpHost": "192.168.18.47",
+    "tcpPort": "1502",
+    "tcpType": "DEFAULT",
+    "serialPort": "/dev/ttyUSB",
+    "serialType": "RTU-BUFFERD",
+    "serialBaudrate": "9600",
+    "serialDatabits": "8",
+    "serialStopbits": "1",
+    "serialParity": "none",
+    "serialConnectionDelay": "100",
+    "serialAsciiResponseStartDelimiter": "0x3A",
+    "unit_id": "1",
+    "commandDelay": "1",
+    "clientTimeout": "1000",
+    "reconnectOnTimeout": true,
+    "reconnectTimeout": "2000",
+    "parallelUnitIdsAllowed": true,
+    "showWarnings": true,
+    "showLogs": true
+  },
+  {
+    "id": "ui_tab_sorting",
+    "type": "ui_tab",
+    "name": "Sorting by Height",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "g_ctrl",
+    "type": "ui_group",
+    "name": "Control",
+    "tab": "ui_tab_sorting",
+    "order": 1,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "g_seq",
+    "type": "ui_group",
+    "name": "Sequence",
+    "tab": "ui_tab_sorting",
+    "order": 2,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "g_in",
+    "type": "ui_group",
+    "name": "Sensors & buttons (PLC inputs)",
+    "tab": "ui_tab_sorting",
+    "order": 3,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "g_out",
+    "type": "ui_group",
+    "name": "Actuators (PLC outputs)",
+    "tab": "ui_tab_sorting",
+    "order": 4,
+    "disp": true,
+    "width": "6",
+    "collapse": false
+  },
+  {
+    "id": "c1",
+    "type": "comment",
+    "z": "tab_sorting",
+    "name": "A. Monitoring: OpenPLC Modbus -> MQTT (sorting/status/#)",
+    "info": "Edit host/port of the \"OpenPLC\" Modbus client (default: Windows laptop 192.168.18.47, port 1502 = Modbus server defined in the OpenPLC Editor project) and the \"Mosquitto\" broker if they are not on this machine.",
+    "x": 200,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "mqtt_pub",
+    "type": "mqtt out",
+    "z": "tab_sorting",
+    "name": "publish status (retain)",
+    "topic": "",
+    "qos": "0",
+    "retain": "true",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_broker",
+    "x": 980,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "f_ok",
+    "type": "function",
+    "z": "tab_sorting",
+    "name": "PLC link: connected",
+    "func": "if (flow.get('plc') !== 'connected') { flow.set('plc', 'connected'); return {topic: 'sorting/system/plc', payload: 'connected'}; }\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 60,
+    "wires": [
+      [
+        "mqtt_pub"
+      ]
+    ]
+  },
+  {
+    "id": "f_err",
+    "type": "function",
+    "z": "tab_sorting",
+    "name": "PLC link: disconnected",
+    "func": "if (flow.get('plc') !== 'disconnected') { flow.set('plc', 'disconnected'); return {topic: 'sorting/system/plc', payload: 'disconnected'}; }\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 100,
+    "wires": [
+      [
+        "mqtt_pub"
+      ]
+    ]
+  },
+  {
+    "id": "f_in",
+    "type": "function",
+    "z": "tab_sorting",
+    "name": "inputs -> topics",
+    "func": "// publish only on change, plus a full refresh every 30 s (so retained topics never go stale)\nconst names = [\"at_entry\", \"low_box\", \"high_box\", \"at_turntable_entry\", \"at_load_position\", \"at_unload_position\", \"at_front\", \"at_right_entry\", \"at_left_entry\", \"at_right_exit\", \"at_left_exit\", \"start_button\", \"reset_button\", \"stop_button\", \"emergency_stop\", \"auto_mode\"];\nconst prefix = 'sorting/status/input/';\nconst last = context.get('last') || {};\nconst now = Date.now();\nconst force = now - (context.get('t') || 0) > 30000;\nif (force) context.set('t', now);\nconst out = [];\nconst send = (topic, val) => {\n    const p = (typeof val === 'boolean') ? (val ? 'true' : 'false') : String(val);\n    if (force || last[topic] !== p) { last[topic] = p; out.push({topic: topic, payload: p}); }\n};\nnames.forEach((n, i) => { if (msg.payload[i] !== undefined) send(prefix + n, !!msg.payload[i]); });\ncontext.set('last', last);\nreturn out.length ? [out] : null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 480,
+    "y": 140,
+    "wires": [
+      [
+        "mqtt_pub"
+      ]
+    ]
+  },
+  {
+    "id": "r_in",
+    "type": "modbus-read",
+    "z": "tab_sorting",
+    "name": "Discrete inputs 0-15",
+    "topic": "",
+    "showStatusActivities": false,
+    "logIOActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "Input",
+    "adr": "0",
+    "quantity": "16",
+    "rate": "500",
+    "rateUnit": "ms",
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "server": "modbus_plc",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "x": 220,
+    "y": 140,
+    "wires": [
+      [
+        "f_in",
+        "f_ok"
+      ],
+      [
+        "f_err"
+      ]
+    ]
+  },
+  {
+    "id": "f_out",
+    "type": "function",
+    "z": "tab_sorting",
+    "name": "outputs -> topics",
+    "func": "// publish only on change, plus a full refresh every 30 s (so retained topics never go stale)\nconst names = [\"feeder_conveyor\", \"entry_conveyor\", \"load\", \"unload\", \"turn\", \"left_conveyor\", \"right_conveyor\", \"green_indicator\", \"yellow_indicator\", \"red_indicator\", \"start_light\", \"reset_light\", \"stop_light\"];\nconst prefix = 'sorting/status/output/';\nconst last = context.get('last') || {};\nconst now = Date.now();\nconst force = now - (context.get('t') || 0) > 30000;\nif (force) context.set('t', now);\nconst out = [];\nconst send = (topic, val) => {\n    const p = (typeof val === 'boolean') ? (val ? 'true' : 'false') : String(val);\n    if (force || last[topic] !== p) { last[topic] = p; out.push({topic: topic, payload: p}); }\n};\nnames.forEach((n, i) => { if (msg.payload[i] !== undefined) send(prefix + n, !!msg.payload[i]); });\ncontext.set('last', last);\nreturn out.length ? [out] : null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 480,
+    "y": 200,
+    "wires": [
+      [
+        "mqtt_pub"
+      ]
+    ]
+  },
+  {
+    "id": "r_out",
+    "type": "modbus-read",
+    "z": "tab_sorting",
+    "name": "Coils 0-12 (outputs)",
+    "topic": "",
+    "showStatusActivities": false,
+    "logIOActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "Coil",
+    "adr": "0",
+    "quantity": "13",
+    "rate": "500",
+    "rateUnit": "ms",
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "server": "modbus_plc",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "x": 220,
+    "y": 200,
+    "wires": [
+      [
+        "f_out",
+        "f_ok"
+      ],
+      [
+        "f_err"
+      ]
+    ]
+  },
+  {
+    "id": "f_cnt",
+    "type": "function",
+    "z": "tab_sorting",
+    "name": "counter -> topic",
+    "func": "// publish only on change, plus a full refresh every 30 s (so retained topics never go stale)\nconst names = [];\nconst prefix = 'sorting/status/';\nconst last = context.get('last') || {};\nconst now = Date.now();\nconst force = now - (context.get('t') || 0) > 30000;\nif (force) context.set('t', now);\nconst out = [];\nconst send = (topic, val) => {\n    const p = (typeof val === 'boolean') ? (val ? 'true' : 'false') : String(val);\n    if (force || last[topic] !== p) { last[topic] = p; out.push({topic: topic, payload: p}); }\n};\nsend(\"sorting/status/counter\", Number(msg.payload[0]));\ncontext.set('last', last);\nreturn out.length ? [out] : null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 480,
+    "y": 260,
+    "wires": [
+      [
+        "mqtt_pub"
+      ]
+    ]
+  },
+  {
+    "id": "r_cnt",
+    "type": "modbus-read",
+    "z": "tab_sorting",
+    "name": "Holding reg 0 (Counter)",
+    "topic": "",
+    "showStatusActivities": false,
+    "logIOActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "HoldingRegister",
+    "adr": "0",
+    "quantity": "1",
+    "rate": "500",
+    "rateUnit": "ms",
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "server": "modbus_plc",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "x": 220,
+    "y": 260,
+    "wires": [
+      [
+        "f_cnt",
+        "f_ok"
+      ],
+      [
+        "f_err"
+      ]
+    ]
+  },
+  {
+    "id": "f_st",
+    "type": "function",
+    "z": "tab_sorting",
+    "name": "states -> topics",
+    "func": "// publish only on change, plus a full refresh every 30 s (so retained topics never go stale)\nconst names = [\"fault_latch\", \"system_run\", \"s0_idle\", \"s1_transport\", \"s2_load\", \"s3_turn\", \"s4_unload\", \"s5_delivered\", \"box_tall\", \"box_short\", \"height_ok\", \"side_seen\"];\nconst prefix = 'sorting/status/state/';\nconst last = context.get('last') || {};\nconst now = Date.now();\nconst force = now - (context.get('t') || 0) > 30000;\nif (force) context.set('t', now);\nconst out = [];\nconst send = (topic, val) => {\n    const p = (typeof val === 'boolean') ? (val ? 'true' : 'false') : String(val);\n    if (force || last[topic] !== p) { last[topic] = p; out.push({topic: topic, payload: p}); }\n};\nnames.forEach((n, i) => { if (msg.payload[i] !== undefined) send(prefix + n, !!msg.payload[i]); });\nconst b = {}; names.forEach((n, i) => b[n] = !!msg.payload[i]);\nconst steps = [['s0_idle','S0 Idle'],['s1_transport','S1 Transport'],['s2_load','S2 Load'],['s3_turn','S3 Turn'],['s4_unload','S4 Unload'],['s5_delivered','S5 Delivered']];\nconst step = steps.find(s => b[s[0]]);\nsend('sorting/status/step', step ? step[1] : '-');\nsend('sorting/status/box_height', b.box_tall ? 'Tall' : (b.box_short ? 'Short' : '-'));\nsend('sorting/status/mode', b.fault_latch ? 'FAULT / E-STOP' : (b.system_run ? 'RUNNING' : 'STOPPED'));\ncontext.set('last', last);\nreturn out.length ? [out] : null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 480,
+    "y": 320,
+    "wires": [
+      [
+        "mqtt_pub"
+      ]
+    ]
+  },
+  {
+    "id": "r_st",
+    "type": "modbus-read",
+    "z": "tab_sorting",
+    "name": "Coils 8200-8211 (status bits %MX1.0-2.3)",
+    "topic": "",
+    "showStatusActivities": false,
+    "logIOActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "unitid": "1",
+    "dataType": "Coil",
+    "adr": "8200",
+    "quantity": "12",
+    "rate": "500",
+    "rateUnit": "ms",
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "server": "modbus_plc",
+    "useIOFile": false,
+    "ioFile": "",
+    "useIOForPayload": false,
+    "emptyMsgOnFail": false,
+    "x": 220,
+    "y": 320,
+    "wires": [
+      [
+        "f_st",
+        "f_ok"
+      ],
+      [
+        "f_err"
+      ]
+    ]
+  },
+  {
+    "id": "c2",
+    "type": "comment",
+    "z": "tab_sorting",
+    "name": "B. Control: MQTT (sorting/cmd/start|stop|reset) -> pulse on Modbus coils 8192-8194",
+    "info": "Dashboard buttons publish to the same topics, so any MQTT client can also command the PLC.",
+    "x": 200,
+    "y": 400,
+    "wires": []
+  },
+  {
+    "id": "cmd_in",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/cmd/#",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 450,
+    "wires": [
+      [
+        "f_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "f_cmd",
+    "type": "function",
+    "z": "tab_sorting",
+    "name": "command -> 300 ms pulse",
+    "func": "const map = {start: 8192, stop: 8193, reset: 8194};   // Cmd_Start, Cmd_Stop, Cmd_Reset (%MX0.0-0.2 = coil 8192-8194)\nconst cmd = String(msg.topic).split('/').pop();\nconst p = String(msg.payload).toLowerCase();\nif (!(cmd in map) || !['1', 'true', 'on'].includes(p)) return null;\nconst addr = map[cmd];\nconst w = v => ({payload: {value: v, fc: 5, unitid: 1, address: addr, quantity: 1}});\nnode.send(w(true));\nsetTimeout(() => node.send(w(false)), 300);\nnode.status({fill: 'green', shape: 'dot', text: 'cmd ' + cmd});\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 470,
+    "y": 450,
+    "wires": [
+      [
+        "w_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "w_cmd",
+    "type": "modbus-flex-write",
+    "z": "tab_sorting",
+    "name": "Write coil (FC5)",
+    "showStatusActivities": false,
+    "showErrors": true,
+    "showWarnings": true,
+    "server": "modbus_plc",
+    "emptyMsgOnFail": false,
+    "keepMsgProperties": false,
+    "delayOnStart": false,
+    "startDelayTime": "",
+    "x": 740,
+    "y": 450,
+    "wires": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": "mqtt_cmd",
+    "type": "mqtt out",
+    "z": "tab_sorting",
+    "name": "publish cmd",
+    "topic": "",
+    "qos": "1",
+    "retain": "false",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_broker",
+    "x": 740,
+    "y": 520,
+    "wires": []
+  },
+  {
+    "id": "c3",
+    "type": "comment",
+    "z": "tab_sorting",
+    "name": "C. Dashboard widgets (every widget is fed from MQTT, not directly from Modbus)",
+    "info": "",
+    "x": 200,
+    "y": 580,
+    "wires": []
+  },
+  {
+    "id": "b_start",
+    "type": "ui_button",
+    "z": "tab_sorting",
+    "name": "START",
+    "group": "g_ctrl",
+    "order": 1,
+    "width": "2",
+    "height": "1",
+    "passthru": false,
+    "label": "START",
+    "tooltip": "",
+    "color": "#ffffff",
+    "bgcolor": "#2e7d32",
+    "className": "",
+    "icon": "",
+    "payload": "1",
+    "payloadType": "str",
+    "topic": "sorting/cmd/start",
+    "topicType": "str",
+    "x": 200,
+    "y": 660,
+    "wires": [
+      [
+        "mqtt_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "b_stop",
+    "type": "ui_button",
+    "z": "tab_sorting",
+    "name": "STOP",
+    "group": "g_ctrl",
+    "order": 2,
+    "width": "2",
+    "height": "1",
+    "passthru": false,
+    "label": "STOP",
+    "tooltip": "",
+    "color": "#ffffff",
+    "bgcolor": "#f9a825",
+    "className": "",
+    "icon": "",
+    "payload": "1",
+    "payloadType": "str",
+    "topic": "sorting/cmd/stop",
+    "topicType": "str",
+    "x": 200,
+    "y": 700,
+    "wires": [
+      [
+        "mqtt_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "b_reset",
+    "type": "ui_button",
+    "z": "tab_sorting",
+    "name": "RESET",
+    "group": "g_ctrl",
+    "order": 3,
+    "width": "2",
+    "height": "1",
+    "passthru": false,
+    "label": "RESET",
+    "tooltip": "",
+    "color": "#ffffff",
+    "bgcolor": "#546e7a",
+    "className": "",
+    "icon": "",
+    "payload": "1",
+    "payloadType": "str",
+    "topic": "sorting/cmd/reset",
+    "topicType": "str",
+    "x": 200,
+    "y": 740,
+    "wires": [
+      [
+        "mqtt_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "in_mode",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/mode",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 780,
+    "wires": [
+      [
+        "ui_mode"
+      ]
+    ]
+  },
+  {
+    "id": "ui_mode",
+    "type": "ui_text",
+    "z": "tab_sorting",
+    "group": "g_ctrl",
+    "order": 4,
+    "width": "6",
+    "height": "1",
+    "name": "Mode",
+    "label": "Mode",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 520,
+    "y": 780,
+    "wires": []
+  },
+  {
+    "id": "in_step",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/step",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 820,
+    "wires": [
+      [
+        "ui_step"
+      ]
+    ]
+  },
+  {
+    "id": "ui_step",
+    "type": "ui_text",
+    "z": "tab_sorting",
+    "group": "g_ctrl",
+    "order": 5,
+    "width": "6",
+    "height": "1",
+    "name": "Active step",
+    "label": "Active step",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 520,
+    "y": 820,
+    "wires": []
+  },
+  {
+    "id": "in_box_height",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/box_height",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 860,
+    "wires": [
+      [
+        "ui_box_height"
+      ]
+    ]
+  },
+  {
+    "id": "ui_box_height",
+    "type": "ui_text",
+    "z": "tab_sorting",
+    "group": "g_ctrl",
+    "order": 6,
+    "width": "6",
+    "height": "1",
+    "name": "Box height",
+    "label": "Box height",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 520,
+    "y": 860,
+    "wires": []
+  },
+  {
+    "id": "in_counter",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/counter",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 900,
+    "wires": [
+      [
+        "ui_counter"
+      ]
+    ]
+  },
+  {
+    "id": "ui_counter",
+    "type": "ui_text",
+    "z": "tab_sorting",
+    "group": "g_ctrl",
+    "order": 7,
+    "width": "6",
+    "height": "1",
+    "name": "Boxes sorted (Counter)",
+    "label": "Boxes sorted (Counter)",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 520,
+    "y": 900,
+    "wires": []
+  },
+  {
+    "id": "in_system_plc",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/system/plc",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 940,
+    "wires": [
+      [
+        "ui_system_plc"
+      ]
+    ]
+  },
+  {
+    "id": "ui_system_plc",
+    "type": "ui_text",
+    "z": "tab_sorting",
+    "group": "g_ctrl",
+    "order": 8,
+    "width": "6",
+    "height": "1",
+    "name": "PLC link (Modbus)",
+    "label": "PLC link (Modbus)",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 520,
+    "y": 940,
+    "wires": []
+  },
+  {
+    "id": "in_system_status",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/system/status",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 980,
+    "wires": [
+      [
+        "ui_system_status"
+      ]
+    ]
+  },
+  {
+    "id": "ui_system_status",
+    "type": "ui_text",
+    "z": "tab_sorting",
+    "group": "g_ctrl",
+    "order": 9,
+    "width": "6",
+    "height": "1",
+    "name": "Node-RED",
+    "label": "Node-RED",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "x": 520,
+    "y": 980,
+    "wires": []
+  },
+  {
+    "id": "in_st_fault_latch",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/fault_latch",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1020,
+    "wires": [
+      [
+        "ui_st_fault_latch"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_fault_latch",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Fault latch",
+    "group": "g_seq",
+    "order": 4,
+    "width": "3",
+    "height": "1",
+    "label": "Fault latch",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#c62828",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1020,
+    "wires": []
+  },
+  {
+    "id": "in_st_system_run",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/system_run",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1060,
+    "wires": [
+      [
+        "ui_st_system_run"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_system_run",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "System run",
+    "group": "g_seq",
+    "order": 5,
+    "width": "3",
+    "height": "1",
+    "label": "System run",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1060,
+    "wires": []
+  },
+  {
+    "id": "in_st_s0_idle",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/s0_idle",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1100,
+    "wires": [
+      [
+        "ui_st_s0_idle"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_s0_idle",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "S0 Idle",
+    "group": "g_seq",
+    "order": 6,
+    "width": "3",
+    "height": "1",
+    "label": "S0 Idle",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1100,
+    "wires": []
+  },
+  {
+    "id": "in_st_s1_transport",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/s1_transport",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1140,
+    "wires": [
+      [
+        "ui_st_s1_transport"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_s1_transport",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "S1 Transport",
+    "group": "g_seq",
+    "order": 7,
+    "width": "3",
+    "height": "1",
+    "label": "S1 Transport",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1140,
+    "wires": []
+  },
+  {
+    "id": "in_st_s2_load",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/s2_load",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1180,
+    "wires": [
+      [
+        "ui_st_s2_load"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_s2_load",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "S2 Load",
+    "group": "g_seq",
+    "order": 8,
+    "width": "3",
+    "height": "1",
+    "label": "S2 Load",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1180,
+    "wires": []
+  },
+  {
+    "id": "in_st_s3_turn",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/s3_turn",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1220,
+    "wires": [
+      [
+        "ui_st_s3_turn"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_s3_turn",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "S3 Turn",
+    "group": "g_seq",
+    "order": 9,
+    "width": "3",
+    "height": "1",
+    "label": "S3 Turn",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1220,
+    "wires": []
+  },
+  {
+    "id": "in_st_s4_unload",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/s4_unload",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1260,
+    "wires": [
+      [
+        "ui_st_s4_unload"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_s4_unload",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "S4 Unload",
+    "group": "g_seq",
+    "order": 10,
+    "width": "3",
+    "height": "1",
+    "label": "S4 Unload",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1260,
+    "wires": []
+  },
+  {
+    "id": "in_st_s5_delivered",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/s5_delivered",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1300,
+    "wires": [
+      [
+        "ui_st_s5_delivered"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_s5_delivered",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "S5 Delivered",
+    "group": "g_seq",
+    "order": 11,
+    "width": "3",
+    "height": "1",
+    "label": "S5 Delivered",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1300,
+    "wires": []
+  },
+  {
+    "id": "in_st_box_tall",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/box_tall",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1340,
+    "wires": [
+      [
+        "ui_st_box_tall"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_box_tall",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Box tall",
+    "group": "g_seq",
+    "order": 12,
+    "width": "3",
+    "height": "1",
+    "label": "Box tall",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1340,
+    "wires": []
+  },
+  {
+    "id": "in_st_box_short",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/box_short",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1380,
+    "wires": [
+      [
+        "ui_st_box_short"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_box_short",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Box short",
+    "group": "g_seq",
+    "order": 13,
+    "width": "3",
+    "height": "1",
+    "label": "Box short",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1380,
+    "wires": []
+  },
+  {
+    "id": "in_st_height_ok",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/height_ok",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1420,
+    "wires": [
+      [
+        "ui_st_height_ok"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_height_ok",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Height known",
+    "group": "g_seq",
+    "order": 14,
+    "width": "3",
+    "height": "1",
+    "label": "Height known",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1420,
+    "wires": []
+  },
+  {
+    "id": "in_st_side_seen",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/state/side_seen",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1460,
+    "wires": [
+      [
+        "ui_st_side_seen"
+      ]
+    ]
+  },
+  {
+    "id": "ui_st_side_seen",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Box at side entry",
+    "group": "g_seq",
+    "order": 15,
+    "width": "3",
+    "height": "1",
+    "label": "Box at side entry",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1460,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_entry",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_entry",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1500,
+    "wires": [
+      [
+        "ui_inp_at_entry"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_entry",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At entry",
+    "group": "g_in",
+    "order": 4,
+    "width": "3",
+    "height": "1",
+    "label": "At entry",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1500,
+    "wires": []
+  },
+  {
+    "id": "in_inp_low_box",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/low_box",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1540,
+    "wires": [
+      [
+        "ui_inp_low_box"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_low_box",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Low box",
+    "group": "g_in",
+    "order": 5,
+    "width": "3",
+    "height": "1",
+    "label": "Low box",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1540,
+    "wires": []
+  },
+  {
+    "id": "in_inp_high_box",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/high_box",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1580,
+    "wires": [
+      [
+        "ui_inp_high_box"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_high_box",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "High box",
+    "group": "g_in",
+    "order": 6,
+    "width": "3",
+    "height": "1",
+    "label": "High box",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1580,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_turntable_entry",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_turntable_entry",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1620,
+    "wires": [
+      [
+        "ui_inp_at_turntable_entry"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_turntable_entry",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At turntable entry",
+    "group": "g_in",
+    "order": 7,
+    "width": "3",
+    "height": "1",
+    "label": "At turntable entry",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1620,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_load_position",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_load_position",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1660,
+    "wires": [
+      [
+        "ui_inp_at_load_position"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_load_position",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At load position",
+    "group": "g_in",
+    "order": 8,
+    "width": "3",
+    "height": "1",
+    "label": "At load position",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1660,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_unload_position",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_unload_position",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1700,
+    "wires": [
+      [
+        "ui_inp_at_unload_position"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_unload_position",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At unload position",
+    "group": "g_in",
+    "order": 9,
+    "width": "3",
+    "height": "1",
+    "label": "At unload position",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1700,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_front",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_front",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1740,
+    "wires": [
+      [
+        "ui_inp_at_front"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_front",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At front",
+    "group": "g_in",
+    "order": 10,
+    "width": "3",
+    "height": "1",
+    "label": "At front",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1740,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_right_entry",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_right_entry",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1780,
+    "wires": [
+      [
+        "ui_inp_at_right_entry"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_right_entry",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At right entry",
+    "group": "g_in",
+    "order": 11,
+    "width": "3",
+    "height": "1",
+    "label": "At right entry",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1780,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_left_entry",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_left_entry",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1820,
+    "wires": [
+      [
+        "ui_inp_at_left_entry"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_left_entry",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At left entry",
+    "group": "g_in",
+    "order": 12,
+    "width": "3",
+    "height": "1",
+    "label": "At left entry",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1820,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_right_exit",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_right_exit",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1860,
+    "wires": [
+      [
+        "ui_inp_at_right_exit"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_right_exit",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At right exit",
+    "group": "g_in",
+    "order": 13,
+    "width": "3",
+    "height": "1",
+    "label": "At right exit",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1860,
+    "wires": []
+  },
+  {
+    "id": "in_inp_at_left_exit",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/at_left_exit",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1900,
+    "wires": [
+      [
+        "ui_inp_at_left_exit"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_at_left_exit",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "At left exit",
+    "group": "g_in",
+    "order": 14,
+    "width": "3",
+    "height": "1",
+    "label": "At left exit",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1900,
+    "wires": []
+  },
+  {
+    "id": "in_inp_start_button",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/start_button",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1940,
+    "wires": [
+      [
+        "ui_inp_start_button"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_start_button",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Start button",
+    "group": "g_in",
+    "order": 15,
+    "width": "3",
+    "height": "1",
+    "label": "Start button",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1940,
+    "wires": []
+  },
+  {
+    "id": "in_inp_reset_button",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/reset_button",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 1980,
+    "wires": [
+      [
+        "ui_inp_reset_button"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_reset_button",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Reset button",
+    "group": "g_in",
+    "order": 16,
+    "width": "3",
+    "height": "1",
+    "label": "Reset button",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 1980,
+    "wires": []
+  },
+  {
+    "id": "in_inp_stop_button",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/stop_button",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2020,
+    "wires": [
+      [
+        "ui_inp_stop_button"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_stop_button",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Stop (NC, ON = OK)",
+    "group": "g_in",
+    "order": 17,
+    "width": "3",
+    "height": "1",
+    "label": "Stop (NC, ON = OK)",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#c62828",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2020,
+    "wires": []
+  },
+  {
+    "id": "in_inp_emergency_stop",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/emergency_stop",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2060,
+    "wires": [
+      [
+        "ui_inp_emergency_stop"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_emergency_stop",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Emergency stop (NC, ON = OK)",
+    "group": "g_in",
+    "order": 18,
+    "width": "3",
+    "height": "1",
+    "label": "Emergency stop (NC, ON = OK)",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#c62828",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2060,
+    "wires": []
+  },
+  {
+    "id": "in_inp_auto_mode",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/input/auto_mode",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2100,
+    "wires": [
+      [
+        "ui_inp_auto_mode"
+      ]
+    ]
+  },
+  {
+    "id": "ui_inp_auto_mode",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Auto mode",
+    "group": "g_in",
+    "order": 19,
+    "width": "3",
+    "height": "1",
+    "label": "Auto mode",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2100,
+    "wires": []
+  },
+  {
+    "id": "in_out_feeder_conveyor",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/feeder_conveyor",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2140,
+    "wires": [
+      [
+        "ui_out_feeder_conveyor"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_feeder_conveyor",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Feeder conveyor",
+    "group": "g_out",
+    "order": 4,
+    "width": "3",
+    "height": "1",
+    "label": "Feeder conveyor",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2140,
+    "wires": []
+  },
+  {
+    "id": "in_out_entry_conveyor",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/entry_conveyor",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2180,
+    "wires": [
+      [
+        "ui_out_entry_conveyor"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_entry_conveyor",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Entry conveyor",
+    "group": "g_out",
+    "order": 5,
+    "width": "3",
+    "height": "1",
+    "label": "Entry conveyor",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2180,
+    "wires": []
+  },
+  {
+    "id": "in_out_load",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/load",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2220,
+    "wires": [
+      [
+        "ui_out_load"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_load",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Load",
+    "group": "g_out",
+    "order": 6,
+    "width": "3",
+    "height": "1",
+    "label": "Load",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2220,
+    "wires": []
+  },
+  {
+    "id": "in_out_unload",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/unload",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2260,
+    "wires": [
+      [
+        "ui_out_unload"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_unload",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Unload",
+    "group": "g_out",
+    "order": 7,
+    "width": "3",
+    "height": "1",
+    "label": "Unload",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2260,
+    "wires": []
+  },
+  {
+    "id": "in_out_turn",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/turn",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2300,
+    "wires": [
+      [
+        "ui_out_turn"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_turn",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Turn",
+    "group": "g_out",
+    "order": 8,
+    "width": "3",
+    "height": "1",
+    "label": "Turn",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2300,
+    "wires": []
+  },
+  {
+    "id": "in_out_left_conveyor",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/left_conveyor",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2340,
+    "wires": [
+      [
+        "ui_out_left_conveyor"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_left_conveyor",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Left conveyor",
+    "group": "g_out",
+    "order": 9,
+    "width": "3",
+    "height": "1",
+    "label": "Left conveyor",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2340,
+    "wires": []
+  },
+  {
+    "id": "in_out_right_conveyor",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/right_conveyor",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2380,
+    "wires": [
+      [
+        "ui_out_right_conveyor"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_right_conveyor",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Right conveyor",
+    "group": "g_out",
+    "order": 10,
+    "width": "3",
+    "height": "1",
+    "label": "Right conveyor",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2380,
+    "wires": []
+  },
+  {
+    "id": "in_out_green_indicator",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/green_indicator",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2420,
+    "wires": [
+      [
+        "ui_out_green_indicator"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_green_indicator",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Green indicator",
+    "group": "g_out",
+    "order": 11,
+    "width": "3",
+    "height": "1",
+    "label": "Green indicator",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2420,
+    "wires": []
+  },
+  {
+    "id": "in_out_yellow_indicator",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/yellow_indicator",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2460,
+    "wires": [
+      [
+        "ui_out_yellow_indicator"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_yellow_indicator",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Yellow indicator",
+    "group": "g_out",
+    "order": 12,
+    "width": "3",
+    "height": "1",
+    "label": "Yellow indicator",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#f9a825",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2460,
+    "wires": []
+  },
+  {
+    "id": "in_out_red_indicator",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/red_indicator",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2500,
+    "wires": [
+      [
+        "ui_out_red_indicator"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_red_indicator",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Red indicator",
+    "group": "g_out",
+    "order": 13,
+    "width": "3",
+    "height": "1",
+    "label": "Red indicator",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#c62828",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2500,
+    "wires": []
+  },
+  {
+    "id": "in_out_start_light",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/start_light",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2540,
+    "wires": [
+      [
+        "ui_out_start_light"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_start_light",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Start light",
+    "group": "g_out",
+    "order": 14,
+    "width": "3",
+    "height": "1",
+    "label": "Start light",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2540,
+    "wires": []
+  },
+  {
+    "id": "in_out_reset_light",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/reset_light",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2580,
+    "wires": [
+      [
+        "ui_out_reset_light"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_reset_light",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Reset light",
+    "group": "g_out",
+    "order": 15,
+    "width": "3",
+    "height": "1",
+    "label": "Reset light",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2580,
+    "wires": []
+  },
+  {
+    "id": "in_out_stop_light",
+    "type": "mqtt in",
+    "z": "tab_sorting",
+    "name": "",
+    "topic": "sorting/status/output/stop_light",
+    "qos": "1",
+    "datatype": "auto-detect",
+    "broker": "mqtt_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 200,
+    "y": 2620,
+    "wires": [
+      [
+        "ui_out_stop_light"
+      ]
+    ]
+  },
+  {
+    "id": "ui_out_stop_light",
+    "type": "ui_led",
+    "z": "tab_sorting",
+    "name": "Stop light",
+    "group": "g_out",
+    "order": 16,
+    "width": "3",
+    "height": "1",
+    "label": "Stop light",
+    "labelPlacement": "left",
+    "labelAlignment": "left",
+    "colorForValue": [
+      {
+        "color": "#9e9e9e",
+        "value": "false",
+        "valueType": "bool"
+      },
+      {
+        "color": "#2e7d32",
+        "value": "true",
+        "valueType": "bool"
+      }
+    ],
+    "allowColorForValueInMessage": false,
+    "shape": "circle",
+    "showGlow": true,
+    "x": 520,
+    "y": 2620,
+    "wires": []
+  }
+]
