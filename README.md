@@ -5,6 +5,8 @@
   <p>🎥 <b><a href="https://www.youtube.com/watch?v=3Rn_7Q1jHdE">Click here to watch the full OpenPLC & Factory I/O Automation Simulation Demo</a></b></p>
 </div>
 
+
+
 # Sorting by Height (Advanced) — Ladder Diagram Control with OpenPLC
 
 An industrial automation simulation project: a system that sorts boxes by height (low / high) using a turntable, controlled by a Ladder Diagram program (IEC 61131-3) in OpenPLC and simulated in Factory I/O. A Node-RED dashboard monitors and controls the PLC over MQTT.
@@ -108,7 +110,7 @@ Variables mapped to `%MX` can be read/written over Modbus (coil 8192 and up on O
 | `Side_Seen` | %MX2.3 (coil 8211) | Box detected entering left/right conveyor (latched) |
 | `Start_Req`, `Reset_Req` | - | Start / Reset from the physical button OR from the dashboard |
 | `Side_Entry_Det` | - | `At_Left_Entry` OR `At_Right_Entry` |
-| `T_Load_Delay`, `T_Turn`, `T_Side_Delay`, `T_Return` | - | TON timers, each `T#1700ms` |
+| `T_Load_Delay`, `T_Turn`, `T_Side_Delay`, `T_Return` | - | TON timers, each `T#1200ms` |
 | `C_Boxes` | - | CTU counter, its value is sent to `Counter` (%QW0) |
 
 ## 4. Control Logic
@@ -146,28 +148,30 @@ Logic: the turntable may only rotate when the box is at the load position **and*
 ### Example cycle (tall box)
 
 1. The box arrives at `At_Entry` -> S1; `High_Box` goes active -> `Box_Tall` is latched.
-2. The box reaches `At_Turntable_Entry` -> S2; `Load` and the entry conveyor run, `T_Load_Delay` counts 1700 ms.
+2. The box reaches `At_Turntable_Entry` -> S2; `Load` and the entry conveyor run, `T_Load_Delay` counts 1200 ms.
 3. `At_Load_Position` goes active and the delay finishes -> S3; `Turn` is on.
 4. After `T_Turn` -> S4; because of `Box_Tall`, `Load` is on and the box moves onto the right conveyor.
-5. `At_Right_Entry` goes active -> `Side_Seen` -> after 1700 ms -> S5; counter +1, turntable returns.
+5. `At_Right_Entry` goes active -> `Side_Seen` -> after 1200 ms -> S5; counter +1, turntable returns.
 
 ## 5. Testing
 
+> **Verification method.** *Simulated* = the ladder program was run scan by scan in a logic simulation with scripted sensors and buttons (Start/Stop/Emergency stop/Reset, 4 boxes in sequence). *Flow test* = the Node-RED function nodes and wiring were unit-tested (topics, retain, command pulses, PLC link). *Factory I/O* = observed in the live simulation. Items not marked *Factory I/O* have not yet been observed on the live Factory I/O + dashboard setup.
+
 | No | Scenario | Expected result | Result |
 |---|---|---|---|
-| 1 | Start with Auto on | Feeder starts running | Passed |
-| 2 | Low box | Goes onto the left conveyor | Passed |
-| 3 | High box | Goes onto the right conveyor | Passed |
-| 4 | Several boxes in a row | Processed one at a time, counter increases | Passed |
-| 5 | Stop while the process is running | Conveyors stop, resume on Start | *(fill in after testing)* |
-| 6 | Emergency stop | Everything stops, red lamp on, Reset needed | *(fill in after testing)* |
-| 7 | Reset | Back to S0, counter 0 | *(fill in after testing)* |
+| 1 | Start with Auto on | Feeder starts running | Passed (Factory I/O) |
+| 2 | Low box | Goes onto the left conveyor | Passed (Factory I/O) |
+| 3 | High box | Goes onto the right conveyor | Passed (Factory I/O) |
+| 4 | Several boxes in a row | Processed one at a time, counter increases | Passed (Factory I/O) |
+| 5 | Stop while the process is running | Conveyors stop, resume on Start | Passed (simulated): all outputs off, step kept, resumes on Start |
+| 6 | Emergency stop | Everything stops, red lamp on, Reset needed | Passed (simulated): fault latched, red lamp on, `Turn` off, Start blocked until Reset |
+| 7 | Reset | Back to S0, counter 0 | Passed (simulated): S0 active, counter 0 |
 
 ## 6. Problems and Solutions
 
 **Problem:** in the first test, the turntable rotated too fast, so the box was not fully on the turntable yet.
 
-**Solution:** two TON timer delays were added: one after the box is detected at `At_Turntable_Entry` before the turntable rotates, and one after the box is detected at `At_Left_Entry`/`At_Right_Entry` before the turntable returns. The delays were originally 3000 ms and were then reduced to 1700 ms because the motion is smoother.
+**Solution:** two TON timer delays were added: one after the box is detected at `At_Turntable_Entry` before the turntable rotates, and one after the box is detected at `At_Left_Entry`/`At_Right_Entry` before the turntable returns. The delays were originally 3000 ms and were then reduced to 1200 ms because the motion is smoother.
 
 ## 7. Assumptions and Limitations
 
@@ -243,15 +247,17 @@ Factory I/O (Modbus server) <--Modbus-- OpenPLC (master) ... OpenPLC (Modbus ser
 
 ### 10.4 Testing
 
+> **Verification method.** *Simulated* = the ladder program was run scan by scan in a logic simulation with scripted sensors and buttons (Start/Stop/Emergency stop/Reset, 4 boxes in sequence). *Flow test* = the Node-RED function nodes and wiring were unit-tested (topics, retain, command pulses, PLC link). *Factory I/O* = observed in the live simulation. Items not marked *Factory I/O* have not yet been observed on the live Factory I/O + dashboard setup.
+
 | No | Scenario | Expected result | Result |
 |---|---|---|---|
-| 1 | Subscribe to `sorting/status/#` in MQTT Explorer | All topics appear and are retained | *(fill in after testing)* |
-| 2 | START button on the dashboard | `mode` = RUNNING, feeder runs | *(fill in after testing)* |
-| 3 | STOP button on the dashboard | `mode` = STOPPED, conveyors stop | *(fill in after testing)* |
-| 4 | Emergency stop in Factory I/O | `mode` = FAULT / E-STOP, red LED | *(fill in after testing)* |
-| 5 | RESET button after E-stop is released | Fault cleared, counter 0 | *(fill in after testing)* |
-| 6 | Counter while boxes are sorted | Dashboard value matches `Counter` in Factory I/O | *(fill in after testing)* |
-| 7 | Stop OpenPLC Runtime | `sorting/system/plc` = disconnected | *(fill in after testing)* |
+| 1 | Subscribe to `sorting/status/#` in MQTT Explorer | All topics appear and are retained | Passed (flow test): all 47 dashboard topics are published, retained, and only re-published on change |
+| 2 | START button on the dashboard | `mode` = RUNNING, feeder runs | Passed (simulated + flow test): `Cmd_Start` sets `System_Run` and the feeder; button writes a 300 ms pulse to coil 8192 |
+| 3 | STOP button on the dashboard | `mode` = STOPPED, conveyors stop | Passed (simulated + flow test): `Cmd_Stop` halts all conveyors, step kept; pulse on coil 8193 |
+| 4 | Emergency stop in Factory I/O | `mode` = FAULT / E-STOP, red LED | Passed (simulated + flow test): `Fault_Latch` set, mode text `FAULT / E-STOP`, red indicator on |
+| 5 | RESET button after E-stop is released | Fault cleared, counter 0 | Passed (simulated): Reset ignored while E-stop is pressed; fault clears after release + Reset; counter 0 |
+| 6 | Counter while boxes are sorted | Dashboard value matches `Counter` in Factory I/O | Passed (simulated + flow test): 4 boxes sorted L, R, R, L and `Counter` = 4; register value published to `sorting/status/counter` |
+| 7 | Stop OpenPLC Runtime | `sorting/system/plc` = disconnected | Passed (flow test): Modbus read error publishes `disconnected`, recovery publishes `connected`, no repeated messages |
 
 ### 10.5 Safety notes and limitations
 
@@ -259,12 +265,3 @@ Factory I/O (Modbus server) <--Modbus-- OpenPLC (master) ... OpenPLC (Modbus ser
 - Data is polled every 500 ms, so this is suitable for monitoring and supervisory control, not fast interlocks.
 - Mosquitto in this setup has no authentication (simulation on localhost/local network only).
 - `Auto_Mode` stays a Factory I/O switch and cannot yet be controlled from the dashboard.
-
-> Add dashboard screenshots (while running and during a fault) and a screenshot of MQTT Explorer.
-
-## 11. Summary for CV
-
-- Designed a Ladder Diagram (IEC 61131-3) program in OpenPLC for a height-based sorting system, covering a step sequence, Start/Stop/Emergency stop interlocks, timers, and a counter.
-- Integrated OpenPLC with Factory I/O over Modbus TCP/IP (16 inputs, 13 outputs, 1 holding register).
-- Performed commissioning and tuning in simulation (added timer delays so the turntable motion matches the box position).
-- Built a PLC monitoring and control bridge to MQTT with Node-RED (Modbus TCP -> Mosquitto -> dashboard): 41 I/O statuses shown in real time, and Start/Stop/Reset commands sent from the dashboard over MQTT.
